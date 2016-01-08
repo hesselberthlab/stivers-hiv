@@ -1,0 +1,14 @@
+#! /usr/bin/env bash
+
+#BSUB -J segment
+#BSUB -e log/segment.%J.err
+#BSUB -o log/segment.%J.out
+
+set -o nounset -o pipefail -o errexit -x
+
+for file in *.chim.score; do 
+    samplename=$(basename $file .chim.score)
+    sample=$(echo $samplename | cut -f1 -d'.')
+    awk -v sample=$sample 'BEGIN {OFS="\t"}{print $1, $2, sample}' $file\
+        >>y_complete.chim.score.tab
+done

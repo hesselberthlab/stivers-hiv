@@ -1,0 +1,62 @@
+#! /usr/bin/env bash
+
+#BSUB -J chimera[1-14]
+#BSUB -o %J.%I.out
+#BSUB -e %J.%I.err
+
+set -o nounset -o pipefail -o errexit -x
+
+source config.sh
+SAMPLE=${SAMPLES[$(($LSB_JOBINDEX - 1))]}
+PROJECT="/vol3/home/ransom/projects/mutation-mapping"
+RESULT=$PROJECT/results/20151130
+
+bam="$PROJECT/results/20151116/$SAMPLE.rmdup.bam"
+prefix=$SAMPLE
+
+# generate a bam file containing chimeric reads
+
+##generate a bam famtools view -H $prefix.bam >$prefix.header.temp
+samtools view -H $bam >$prefix.header.temp
+samtools view -f 0x800 $bam >>$prefix.header.temp
+samtools view -bS $prefix.header.temp >$prefix.chim.bam
+rm $prefix.header.temp
+
+#generate a bam file containing discordant HIV reads
+
+samtools view -H $prefix.chim.bam >$prefix.header.temp
+samtools view $prefix.chim.bam |awk '($3=="HIV"||$7=="HIV")' >> $prefix.header.temp 
+samtools view -bS $prefix.header.temp >$prefix.chim.hiv.bam
+rm $prefix.header.temp
+
+## to remove same chromosome or = (non-paired)designations
+samtools view -H $prefix.chim.hiv.bam >$prefix.chim.hiv.header.temp
+samtools view $prefix.chim.hiv.bam |awk '($3!=$7 && $7!="=")' >>$prefix.chim.hiv.header.temp
+samtools view -bS $prefix.chim.hiv.header.temp >$prefix.chim.hiv.bam
+rm $prefix.chim.hiv.header.temp
+
+samtools sort $prefix.chim.hiv.bam $prefix.chim.hiv.bam
+samtools index $prefix.chim.hiv.bam
+
+samtools view $prefix.chim.hiv.bam |cut -f3,4,5,6,7,8 |sort |uniq > $prefix.chim.uniq.sites
+
+# To determine the number of bases that match for chimera and convert to
+# bedgraph
+samtools view $prefix.chim.hiv.bam |cut -f6 |sed 's/M/m/2g' |grep -Eo '[0-9]{1,3}M' |sed 's/M//' > $prefix.bed
+samtools view $prefix.chim.hiv.bam | awk 'BEGIN {OFS="\t"}{print $3, $4}' >$prefix.chim.hiv.bed
+
+paste $prefix.chim.hiv.bed $prefix.bed >$prefix.chim.hiv2.bed
+cat $prefix.chim.hiv2.bed | awk 'BEGIN {OFS="\t"} {print $1, $2+$3, $2+$3+1}'>$prefix.chim.hiv3.bed
+cat $prefix.chim.hiv3.bed |sort |uniq -c |awk 'BEGIN {OFS="\t"}{print $2, $3, $4, $1}' > $prefix.chim.hiv.bg
+
+cat $prefix.chim.uniq.sites |cut -f4 |sed 's/M/m/2g' |grep -Eo '[0-9]{1,3}M' |sed 's/M//' > $prefix.uniq.bed
+cat $prefix.chim.uniq.sites |awk 'BEGIN {OFS="\t"}{print $1, $2}' >$prefix.chim.hiv.uniq.bed
+paste $prefix.chim.hiv.uniq.bed $prefix.uniq.bed > $prefix.chim.hiv2.uniq.bed
+cat $prefix.chim.hiv2.uniq.bed |awk '{OFS="\t"} {print $1, $2+$3, $2+$3+1}' >$prefix.chim.hiv3.uniq.bed
+cat $prefix.chim.hiv3.uniq.bed | sort |uniq -c| awk 'BEGIN{OFS="\t"}{print $2, $3, $4, $1}' > $prefix.chim.hiv.uniq.bg
+# remove extra files
+#rm $prefix.chim.hiv.bam.bam
+#rm $prefix.chim.hiv.bed
+#rm $prefix.chim.hiv2.bed
+#rm $prefix.chim.hiv3.bed
+#rm $prefix.bed
