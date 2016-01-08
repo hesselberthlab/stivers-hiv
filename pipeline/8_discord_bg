@@ -1,0 +1,53 @@
+#! /usr/bin/env bash
+
+#BSUB -J discord[1-14]
+#BSUB -o log/%J.%I.out
+#BSUB -e log/%J.%I.err
+
+set -o nounset -o pipefail -o errexit -x
+
+source config.sh
+SAMPLE=${SAMPLES[$(($LSB_JOBINDEX - 1))]}
+PROJECT="/vol3/home/ransom/projects/mutation-mapping"
+RESULT=$PROJECT/results/20151130
+DATA=$PROJECT/results/20151116
+
+
+bam="$DATA/$SAMPLE.rmdup.bam"
+prefix=$SAMPLE
+FASTA="hg19-integrant.fa"
+chrom="$HOME/public_html/hubs/HIV/HIV.hg19.chrom.sizes"
+
+#generate a bam file containing discordant reads
+samtools view -uF 2 $bam >$prefix.dis.bam
+
+##generate a bam file containing discordant HIV reads
+samtools view -H $prefix.dis.bam >$prefix.header.temp
+samtools view $prefix.dis.bam |awk '($3=="HIV"||$7=="HIV")' >> $prefix.header.temp 
+samtools view -bS $prefix.header.temp >$prefix.dis.hiv.bam
+rm $prefix.header.temp
+
+## to remove same chromosome or = (non-paired)designations
+samtools view -H $prefix.dis.hiv.bam >$prefix.dis.hiv.header.temp
+samtools view $prefix.dis.hiv.bam |awk '($3!=$7 && $7!="=")' >>$prefix.dis.hiv.header.temp
+samtools view -bS $prefix.dis.hiv.header.temp >$prefix.dis.hiv.bam
+rm $prefix.dis.hiv.header.temp
+
+samtools sort $prefix.dis.hiv.bam $prefix.dis.hiv.bam
+samtools index $prefix.dis.hiv.bam
+samtools view $prefix.dis.hiv.bam |cut -f3,4,5,6,7,8 |sort |uniq >$prefix.dis.uniq.sites
+#to generate bed format
+samtools view $prefix.dis.hiv.bam |awk 'BEGIN {OFS="\t"}{print $3, $4, $4+151}' >$prefix.dis.hiv.bed
+
+#to generate bg format
+cat $prefix.dis.hiv.bed |sort |uniq -c |awk 'BEGIN {OFS="\t"}{print $2, $3, $4, $1}' > $prefix.dis.hiv.bg
+cat $prefix.dis.uniq.sites |sort |uniq -c |awk 'BEGIN {OFS="\t"}{print$2, $3, $4, $1}' > $prefix.dis.hiv.uniq.bg
+#to create bw format
+bedClip $prefix.dis.hiv.bed $chrom $prefix.dis.hiv.clip.bed
+bedSort $prefix.dis.hiv.clip.bed $prefix.dis.hiv.sort.bed
+bedToBigBed $prefix.dis.hiv.sort.bed $chrom $prefix.dis.hiv.bb
+
+cat $prefix.dis.hiv.bg |awk 'BEGIN {OFS="\t"}{print $1, $2, $2+1, $4}' >$prefix.dis.hiv.1b.bg
+bedSort $prefix.dis.hiv.1b.bg $prefix.dis.hiv.1b.sort.bg
+bedGraphToBigWig $prefix.dis.hiv.1b.sort.bg $chrom $prefix.dis.hiv.bw
+

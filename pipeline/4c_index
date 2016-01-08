@@ -1,0 +1,13 @@
+#! /usr/bin/env bash
+
+#BSUB -J index
+#BSUB -e log/index.%J.err
+#BSUB -o log/index.%J.err
+
+source config.sh
+
+for sample in ${SAMPLES[@]}; do
+    bam=$sample.rmdup.bam
+    echo $sample 
+    samtools index $bam 
+done
