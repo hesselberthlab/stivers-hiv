@@ -1,0 +1,56 @@
+
+''' rules for alignment and coverage generation '''
+
+rule align:
+    input:
+        'raw/{sample}.R1.fastq.gz',
+        'raw/{sample}.R2.fastq.gz'
+    output:
+        'alignment/{sample}/{sample}.bam'
+    params:
+        sample = '{sample}',
+        job_name = 'align.{sample}'
+    threads: 8
+    log:
+        'logs/{sample}/align.log'
+    shell:
+        "bwa mem -t {threads} {BWAIDX} {input} "
+        "| samtools view -ShuF4 - "
+        "| samtools sort -o - alignment/{params.sample}.temp -m 8G "
+        "> {output} && samtools index {output}"
+
+
+rule coverage:
+    input:
+        'alignment/{sample}/{sample}.bam'
+    output:
+        'coverage/{sample}/{sample}.{strand}.bg.gz'
+    params:
+        strand_arg = lambda wildcards: STRANDS[wildcards.strand],
+        job_name = 'coverage.{sample}.{strand}',
+        doc = "determine coverage for each strand"
+    log:
+        'logs/{sample}/coverage.log'
+    shell:
+        "bedtools genomecov -ibam {input} -g {CHROMSIZE} -bg "
+        "{params.strand_arg} "
+        "| bedtools sort -i - "
+        "| gzip -c > {output}"
+
+
+rule coverage_bigwigs:
+    input:
+        'coverage/{sample}/{sample}.combined.{strand}.bg.gz'
+    output:
+        temp('coverage/{sample}/{sample}.{strand}.bg'),
+        'coverage/{sample}/{sample}.{strand}.bw'
+    params:
+        tempfile = 'coverage/{sample}/{sample}.{strand}.bg',
+        job_name = 'coverage.bigwig.{sample}.{strand}',
+    log:
+        'logs/{sample}/coverage.bigwig.{strand}.log'
+    shell:
+        "zcat {input} > {params.tempfile}; "
+        "bedGraphToBigWig {params.tempfile} {CHROMSIZE} {output[1]}"
+
+

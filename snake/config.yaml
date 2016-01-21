@@ -1,0 +1,21 @@
+geo_acc:  GSE76091
+pmid:     XXX
+descrip:  Diverse fates of uracilated HIV DNA during infection of myeloid lineage cells
+
+samples:
+    - SRR1158613
+
+descriptions: 
+    - XXX 
+
+short_descrip:
+    - XXX 
+
+urls:
+#     - ftp://ftp-trace.ncbi.nlm.nih.gov/sra/sra-instant/reads/ByExp/sra/SRX%2FSRX462%2FSRX462597/SRR1158613/SRR1158613.sra
+
+FASTA: '/vol3/home/jhessel/ref/genomes/sacCer1/sacCer1.fa'
+BOWTIEIDX: '/vol3/home/jhessel/ref/genomes/sacCer1/sacCer1'
+CHROMSIZE: '/vol3/home/jhessel/ref/genomes/sacCer1/sacCer1.chrom.sizes'
+
+# vim tw=150
