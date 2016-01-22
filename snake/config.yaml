@@ -10,16 +10,14 @@ descriptions:
     - "MDM Day 7 -UDG"
     - "MDM Day 7 +UDG"
 
-short_descrip:
-    - "MDM Day 7 -UDG"
-    - "MDM Day 7 +UDG"
-
 urls:
      - ftp://ftp-trace.ncbi.nlm.nih.gov/sra/sra-instant/reads/ByExp/sra/SRX%2FSRX148%2FSRX1488160/SRR3026044/SRR3026044.sra
-     - ftp://ftp-trace.ncbi.nlm.nih.gov/sra/sra-instant/reads/ByExp/sra/SRX%2FSRX462%2FSRX462597/SRR1158613/SRR1158613.sra
+     - ftp://ftp-trace.ncbi.nlm.nih.gov/sra/sra-instant/reads/ByExp/sra/SRX%2FSRX148%2FSRX1488161/SRR3026045/SRR3026045.sra
 
-FASTA: 'data/HIV.fa.gz'
-BWAIDX: 'data/HIV'
-CHROMSIZE: 'data/HIV.chrom.sizes'
+FASTA_HIV: '/vol3/home/jhessel/devel/stivers-hiv/snake/data/HIV.fa.gz'
+BWAIDX_HIV: '/vol3/home/jhessel/devel/stivers-hiv/snake/data/HIV'
+FASTA_FULL: '/vol3/home/jhessel/devel/stivers-hiv/snake/data/hg19-HIV.fa.gz'
+BWAIDX_FULL: '/vol3/home/jhessel/devel/stivers-hiv/snake/data/hg19-HIV'
+CHROMSIZE: '/vol3/home/jhessel/devel/stivers-hiv/snake/data/HIV.chrom.sizes'
 
 # vim tw=150

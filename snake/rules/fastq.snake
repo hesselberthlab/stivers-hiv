@@ -2,7 +2,7 @@
 ''' rules to download and process SRA files '''
 
 # XXX uncomment for download jobs to run on head node 
-localrules: download_sra
+# localrules: download_sra
 
 rule download_sra:
     output:
@@ -20,11 +20,12 @@ rule sra_to_fastq:
     input:
         'raw/{sample}.sra'
     output:
-        'raw/{sample}.fastq.gz'
+        'raw/{sample}_1.fastq.gz',
+        'raw/{sample}_2.fastq.gz'
     log:
         'logs/{sample}/fastq.{sample}.log'
     params:
         job_name = 'sra_to_fastq.{sample}'
     shell:
-        'fastq-dump --gzip -O raw {input}'
+        'fastq-dump --gzip -O raw --split-files {input}'
 
