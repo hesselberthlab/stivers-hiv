@@ -1,0 +1,38 @@
+
+rule freebayes_HIV:
+    input:
+        'alignment/{sample}/{sample}.dedup.bam' 
+    output:
+        'variants/{sample}.tidy.vcf.gz'
+    log:
+        'logs/{sample}/variants.{sample}.log'
+    params:
+        job_name = 'variants.{sample}',
+        fasta_index = config['FASTA_HIV_IDX'], 
+        fasta = config['FASTA_HIV'], 
+        chunk_size = 600
+    threads:
+        16 # matched to chunk_size
+    shell:
+        "freebayes-parallel <(fasta_generate_regions.py "
+        " {params.fasta_index} {params.chunk_size}) {threads} "
+        "-f {params.fasta} {input} -F 0.001 --pooled-continuous -C 1 "
+        "-m 30 -q 30 "
+        "| vt decompose - "
+        "| vt normalize -r {params.fasta} - "
+        "| bgzip -c > {output} && tabix {output}"
+
+#rule tidy_vcf:
+#    input:
+#       'variants/{sample}.vcf.gz'
+#    output:
+#       'variants/{sample}.burp.vcf.gz'
+#    log:
+#        'logs/{sample}/tidy_vcf.{sample}.log'
+#    params:
+#        job_name = 'tidy_vcf.{sample}'
+#    shell:
+#        "vt decompose {input} "
+#        "| vt normalize -r {HIV_FASTA} - "
+#        "> bgzip -c > {output} && tabix {output}"
+

@@ -4,35 +4,50 @@
 __author__ = 'Jay Hesselberth <jay.hesselberth@gmail.com>'
 
 from datetime import date
-today = date.today().isoformat()
-workdir: 'results-twoprime/%s' % today
+TODAY = date.today().isoformat()
+workdir: 'results-stivers-hiv'
 
 STRANDS = {'pos':'-strand +', 'neg':'-strand -'}
 
-FASTA = config['FASTA']
-BOWTIEIDX = config['BWAINDEX']
+FASTA_HIV = config['FASTA_HIV']
+FASTA_HIV_IDX = config['FASTA_HIV_IDX']
+FASTA_FULL = config['FASTA_FULL']
+FASTA_FULL_IDX = config['FASTA_FULL_IDX']
+BWAIDX_HIV = config['BWAIDX_HIV']
+BWAIDX_FULL = config['BWAIDX_FULL']
 CHROMSIZE = config['CHROMSIZE']
 
 from collections import namedtuple
 sample_info = namedtuple('sample_info', ['description', 'url'])
-SAMPLE_INFO = {id:sample_info(description, url) for id, description, url in
+SAMPLE_INFO = {id:sample_info(description, url)
+               for id, description, url in
                zip(config['samples'], config['descriptions'],
-               config['urls'])}
+                   config['urls'])}
+
+shell.prefix("set -o nounset -o pipefail -o errexit -x; ")
 
 rule all:
     input:
-        expand('coverage/{sample}/{sample}.{side}.{strand}.bg.gz',
-               sample=config['samples'], strand=STRANDS, side=SIDES),
-        expand('coverage/{sample}/{sample}.{strand}.bw',
-               sample=config['samples'], strand=STRANDS),
-        expand('scores/{sample}/{sample}.{strand}.score{score}.bg.gz',
-               sample=config['samples'], strand=STRANDS, score=SCORES),
-        expand('scores/{sample}/{sample}.{strand}.score{score}.bw',
-               sample=config['samples'], strand=STRANDS, score=SCORES)
+        expand('raw/{sample}.sra', sample=config['samples']),
+        expand(('raw/{sample}_1.fastq.gz', 'raw/{sample}_2.fastq.gz'),
+               sample=config['samples']),
+        expand('alignment/{sample}/{sample}.bam', sample=config['samples']),
+        expand('coverage/{sample}/{sample}.{strand}.bg.gz',
+               sample=config['samples'],
+               strand=STRANDS),
+        expand('alignment/{sample}/{sample}.chimeras.bam',
+               sample=config['samples']),
+        expand('alignment/{sample}/{sample}.discordants.bam',
+               sample=config['samples']),
+        expand('alignment/{sample}/{sample}.chimeras.rmdup.bam',
+               sample=config['samples']),
+        expand('alignment/{sample}/{sample}.discordants.rmdup.bam',
+               sample=config['samples']),
+        expand('variants/{sample}.tidy.vcf.gz',
+               sample=config['samples']),
 
 include: 'rules/fastq.snake'
+include: 'rules/alignment.snake'
 include: 'rules/coverage.snake'
-include: 'rules/genomedata.snake'
-include: 'rules/scores.snake'
-# include: 'rules/hub.snake'
+include: 'rules/variants.snake'
 

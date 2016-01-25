@@ -4,24 +4,30 @@
 # XXX uncomment for download jobs to run on head node 
 # localrules: download_sra
 
+def url_input(wildcards):
+    return SAMPLE_INFO[wildcards.sample].url
+
 rule download_sra:
+    #input:
+    #    url_input
     output:
-       'raw/{sample}.sra'
+       'static/raw/{sample}.sra'
     log:
-        'logs/{sample}/download_sra.{sample}.log'
+       'logs/{sample}/download_sra.{sample}.log'
     params:
         job_name = 'download_sra.{sample}',
         url = lambda wildcards: SAMPLE_INFO[wildcards.sample].url
     shell:
         'wget -nv -o {log} -O {output} {params.url}'
+        # 'wget -nv -o {log} -O {output} {input}'
 
 
 rule sra_to_fastq:
     input:
-        'raw/{sample}.sra'
+        'static/raw/{sample}.sra'
     output:
-        'raw/{sample}_1.fastq.gz',
-        'raw/{sample}_2.fastq.gz'
+        'static/raw/{sample}_1.fastq.gz',
+        'static/raw/{sample}_2.fastq.gz'
     log:
         'logs/{sample}/fastq.{sample}.log'
     params:

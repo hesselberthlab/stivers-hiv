@@ -1,28 +1,7 @@
 
-''' rules for alignment and coverage generation '''
-
-rule align:
-    input:
-        'raw/{sample}.R1.fastq.gz',
-        'raw/{sample}.R2.fastq.gz'
-    output:
-        'alignment/{sample}/{sample}.bam'
-    params:
-        sample = '{sample}',
-        job_name = 'align.{sample}'
-    threads: 8
-    log:
-        'logs/{sample}/align.log'
-    shell:
-        "bwa mem -t {threads} {BWAIDX} {input} "
-        "| samtools view -ShuF4 - "
-        "| samtools sort -o - alignment/{params.sample}.temp -m 8G "
-        "> {output} && samtools index {output}"
-
-
 rule coverage:
     input:
-        'alignment/{sample}/{sample}.bam'
+        'alignment/{sample}/{sample}.dedup.bam'
     output:
         'coverage/{sample}/{sample}.{strand}.bg.gz'
     params:

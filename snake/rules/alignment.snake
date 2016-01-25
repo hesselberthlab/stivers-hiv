@@ -1,0 +1,105 @@
+''' rules for alignment and coverage generation '''
+
+rule align:
+    input:
+        'raw/{sample}_1.fastq.gz',
+        'raw/{sample}_2.fastq.gz'
+    output:
+        'alignment/{sample}/{sample}.bam',
+#        'alignment/{sample}/{sample}.bam.bai',
+    params:
+        sample = '{sample}',
+        job_name = 'align.{sample}'
+    threads: 8
+    log:
+        'logs/{sample}/align.log'
+    shell:
+        "bwa mem -t {threads} {BWAIDX_FULL} {input} "
+        "| samtools view -huF4 - "
+        "| samtools sort -T alignment/{params.sample}/{params.sample} -m 8G "
+        "> {output} && samtools index {output}"
+
+
+rule rm_chim_discord:
+    input:
+        'alignment/{sample}/{sample}.bam'
+    output:
+        'alignment/{sample}/{sample}.dechim.bam',
+#        'alignment/{sample}/{sample}.dechim.bam.bai'
+    params:
+        job_name = 'rm_chim_discord.{sample}',
+    log:
+        'logs/{sample}/rm_chim_discord.log'
+    shell: 
+        "samtools view -bh -F 0x800 -f 0x2 {input} > {output} "
+        "&& samtools index {output}"
+
+
+rule chimeras:
+    input:
+        'alignment/{sample}/{sample}.bam'
+    output:
+        'alignment/{sample}/{sample}.chimeras.bam',
+#        'alignment/{sample}/{sample}.chimeras.bam.bai'
+    params:
+        job_name = 'chimeras.{sample}',
+    log:
+        'logs/{sample}/chimeras.log'
+    shell: 
+        "samtools view -bh -f 0x800 {input} > {output} "
+        "&& samtools index {output}"
+
+
+rule discordants:
+    input:
+        'alignment/{sample}/{sample}.bam'
+    output:
+        'alignment/{sample}/{sample}.discordants.bam',
+#        'alignment/{sample}/{sample}.discordants.bam.bai'
+    params:
+        job_name = 'discordants.{sample}',
+    log:
+        'logs/{sample}/discordants.log'
+    shell: 
+        "samtools view -bh -F 0x2 {input} > {output} "
+        "&& samtools index {output}"
+
+
+rule dedup:
+    input:
+        'alignment/{sample}/{sample}.dechim.bam'
+    output:
+        'alignment/{sample}/{sample}.dedup.bam',
+#        'alignment/{sample}/{sample}.dedup.bam.bai'
+    params:
+        job_name = 'rmdup.{sample}',
+    log:
+        'logs/{sample}/dedup.log'
+    shell:
+        "samtools rmdup {input} {output} "
+        "&& samtools index {output}"
+
+rule dedup_chimeras:
+    input:
+        'alignment/{sample}/{sample}.chimeras.bam'
+    output:
+        'alignment/{sample}/{sample}.chimeras.rmdup.bam',
+    params:
+        job_name = 'chimeras_rmdup.{sample}',
+    log:
+        'logs/{sample}/chimeras_dedup.log'
+    script:
+        '../scripts/dedup_chimeras.py'
+
+rule dedup_discordants:
+    input:
+        'alignment/{sample}/{sample}.discordants.bam'
+    output:
+        'alignment/{sample}/{sample}.discordants.rmdup.bam',
+    params:
+        job_name = 'discordants_rmdup.{sample}',
+    log:
+        'logs/{sample}/discordants_dedup.log'
+    script:
+        '../scripts/dedup_discordants.py'
+
