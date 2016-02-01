@@ -1,0 +1,16 @@
+''' rules for alignment and coverage generation '''
+
+rule rsync:
+    input:
+        '.'
+    output:
+        touch('rsync.done')
+    params:
+        rsync_args = '--recursive --exclude \'*.fastq.gz\' --exclude \'*.sra\' --exclude \'log/*\' --exclude \'logs/*\' --exclude \'.snakemake/*\' --update --progress',
+        rsync_path = 'jhessel@amc-sandbox:~/public_html/stivers-hiv',
+        job_name = 'rsync'
+    log:
+        'logs/rsync.log'
+    shell:
+        'rsync {params.rsync_args} {input} {params.rsync_path}'
+
