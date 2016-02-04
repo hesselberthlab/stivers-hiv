@@ -3,3 +3,4 @@
 *.err
 raw/*
 */data/*
+.Rproj.user
