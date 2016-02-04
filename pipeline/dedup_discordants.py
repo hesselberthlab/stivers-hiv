@@ -29,7 +29,7 @@ with AlignmentFile(bamfilename) as bamfile:
                                      record.next_reference_start)
 
                 kept_records[this_pos][that_pos] = record
-                
+
 with AlignmentFile(discordantfilename, 'wb', template=bamfile) as discordants:
     for this_pos in kept_records:
         for that_pos, record in kept_records[this_pos].items():

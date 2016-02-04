@@ -16,7 +16,7 @@ with AlignmentFile(bamfilename) as bamfile:
 
             if bamfile.getrname(record.rname) == 'HIV' or \
                bamfile.getrname(record.next_reference_id) == 'HIV':
-            
+
                 if record.next_reference_id != '=' \
                     and record.rname != record.next_reference_id:
 
@@ -25,7 +25,7 @@ with AlignmentFile(bamfilename) as bamfile:
                                          record.next_reference_start)
 
                     kept_records[this_pos][that_pos] = record
-                    
+
 with AlignmentFile(chimerafilename, 'wb', template=bamfile) as chimeras:
     for this_pos in kept_records:
         for that_pos, record in kept_records[this_pos].items():
