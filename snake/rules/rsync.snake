@@ -1,5 +1,7 @@
 ''' rules for alignment and coverage generation '''
 
+localrules: rsync
+
 rule rsync:
     input:
         '.'

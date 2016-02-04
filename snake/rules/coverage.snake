@@ -1,12 +1,12 @@
 
-rule coverage:
+rule coverage_bedgraph:
     input:
-        'alignment/{sample}/{sample}.dedup.bam'
+        'alignment/{sample}/{sample}.bam'
     output:
         'coverage/{sample}/{sample}.{strand}.bg.gz'
     params:
         strand_arg = lambda wildcards: STRANDS[wildcards.strand],
-        job_name = 'coverage.{sample}.{strand}',
+        job_name = 'coverage_bg.{sample}.{strand}',
         doc = "determine coverage for each strand"
     log:
         'logs/{sample}/coverage.log'
@@ -14,6 +14,23 @@ rule coverage:
         "bedtools genomecov -ibam {input} -g {CHROMSIZE} -bg "
         "{params.strand_arg} "
         "| bedtools sort -i - "
+        "| gzip -c > {output}"
+
+
+rule coverage_depth:
+    input:
+        'alignment/{sample}/{sample}.bam'
+    output:
+        'coverage/{sample}/{sample}.{strand}.tab.gz'
+    params:
+        strand_arg = lambda wildcards: STRANDS[wildcards.strand],
+        job_name = 'coverage_depth.{sample}.{strand}',
+        doc = "determine coverage for each strand"
+    log:
+        'logs/{sample}/coverage.log'
+    shell:
+        "bedtools genomecov -ibam {input} -g {CHROMSIZE} -dz "
+        "{params.strand_arg} "
         "| gzip -c > {output}"
 
 
@@ -33,3 +50,41 @@ rule coverage_bigwigs:
         "bedGraphToBigWig {params.tempfile} {CHROMSIZE} {output[1]}"
 
 
+rule coverage_summary_HIV:
+    input:
+        'coverage/{sample}/{sample}.{strand}.tab.gz'
+    output:
+        'coverage/summary/summary.{sample}.{strand}.tab.gz',
+    params:
+        strand = '{strand}',
+        sample = '{sample}',
+        job_name = 'coverage_summary_HIV.{sample}.{strand}.log'
+    log:
+        'logs/{sample}/coverage.summary.log'
+    shell:
+        'zcat {input} '
+        '| awk \'$1 == \"HIV\"\''
+        '| awk -v strand={params.strand} -v sample={params.sample} '
+        '\'{{OFS=\"\\t\"}} {{print $1,$2,$3,sample,strand}}\' '
+        '| gzip -c > {output}'
+
+def coverage_summary_input(empty):
+
+    filebase = 'coverage/summary/summary.{sample}.{strand}.tab.gz'
+    filespec = [filebase.format(sample = sample, strand = strand)
+                for sample in config['samples'] for strand in STRANDS]
+
+    return filespec
+
+rule merge_coverage_summary:
+    input: coverage_summary_input    
+    output:
+        'coverage/summary/combined.tab.gz'
+    params:
+        job_name = 'merge_coverage_summary'
+    log:
+        'logs/merge_coverage_summary.log'
+    shell:
+        "zcat {input} | gzip -c > {output}"
+
+    

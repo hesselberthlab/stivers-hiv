@@ -11,7 +11,7 @@ rule download_sra:
     #input:
     #    url_input
     output:
-       'static/raw/{sample}.sra'
+       'raw/{sample}/{sample}.sra'
     log:
        'logs/{sample}/download_sra.{sample}.log'
     params:
@@ -19,19 +19,46 @@ rule download_sra:
         url = lambda wildcards: SAMPLE_INFO[wildcards.sample].url
     shell:
         'wget -nv -o {log} -O {output} {params.url}'
-        # 'wget -nv -o {log} -O {output} {input}'
 
 
 rule sra_to_fastq:
     input:
-        'static/raw/{sample}.sra'
+        'raw/{sample}/{sample}.sra'
     output:
-        'static/raw/{sample}_1.fastq.gz',
-        'static/raw/{sample}_2.fastq.gz'
+        'raw/{sample}/{sample}_1.fastq.gz',
+        'raw/{sample}/{sample}_2.fastq.gz'
     log:
         'logs/{sample}/fastq.{sample}.log'
     params:
         job_name = 'sra_to_fastq.{sample}'
     shell:
         'fastq-dump --gzip -O raw --split-files {input}'
+
+
+rule fastqp_R1:
+    input:
+        'raw/{sample}/{sample}_1.fastq.gz'
+    output:
+        touch('raw/{sample}/fastqp_R1.done'),
+        'raw/{sample}/{sample}-fastqp-R1'
+    log:
+        'logs/{sample}/fastqp_R1.log'
+    params:
+        job_name = 'fastqp_R1.{sample}'
+    shell:
+        'fastqp -o {output[1]} {input}'
+
+
+rule fastqp_R2:
+    input:
+        'raw/{sample}/{sample}_2.fastq.gz'
+    output:
+        touch('raw/{sample}/fastqp_R2.done'),
+        'raw/{sample}/{sample}-fastqp-R2'
+    log:
+        'logs/{sample}/fastqp_R2.log'
+    params:
+        job_name = 'fastqp_R2.{sample}'
+    shell:
+        'fastqp -o {output[1]} {input}'
 

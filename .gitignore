@@ -2,4 +2,4 @@
 *.out
 *.err
 raw/*
-data/*
+*/data/*

@@ -28,13 +28,23 @@ shell.prefix("set -o nounset -o pipefail -o errexit -x; ")
 
 rule all:
     input:
-        expand('raw/{sample}.sra', sample=config['samples']),
-        expand(('raw/{sample}_1.fastq.gz', 'raw/{sample}_2.fastq.gz'),
+        expand('raw/{sample}/{sample}.sra', sample=config['samples']),
+        expand(('raw/{sample}/{sample}_1.fastq.gz', 'raw/{sample}/{sample}_2.fastq.gz'),
+               sample=config['samples']),
+        expand('raw/{sample}/fastqp_R1.done',
+               sample=config['samples']),
+        expand('raw/{sample}/fastqp_R2.done',
                sample=config['samples']),
         expand('alignment/{sample}/{sample}.bam', sample=config['samples']),
         expand('coverage/{sample}/{sample}.{strand}.bg.gz',
                sample=config['samples'],
                strand=STRANDS),
+        expand('coverage/{sample}/{sample}.{strand}.tab.gz',
+               sample=config['samples'],
+               strand=STRANDS),
+        #expand('coverage/summary/summary.{sample}.{strand}.tab.gz', sample=config['samples'],
+        #       strand=STRANDS),
+        'coverage/summary/combined.tab.gz', 
         expand('alignment/{sample}/{sample}.chimeras.bam',
                sample=config['samples']),
         expand('alignment/{sample}/{sample}.discordants.bam',
@@ -43,11 +53,16 @@ rule all:
                sample=config['samples']),
         expand('alignment/{sample}/{sample}.discordants.rmdup.bam',
                sample=config['samples']),
+        expand('alignment/{sample}/{sample}.discordants.fq.gz',
+               sample=config['samples']),
         expand('variants/{sample}.tidy.vcf.gz',
                sample=config['samples']),
+        'rsync.done'
 
 include: 'rules/fastq.snake'
 include: 'rules/alignment.snake'
 include: 'rules/coverage.snake'
+include: 'rules/chim_discord.snake'
 include: 'rules/variants.snake'
+include: 'rules/rsync.snake'
 
